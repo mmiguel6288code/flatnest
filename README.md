@@ -1,10 +1,8 @@
-#listtools
+#flatnest
+[View API documentation](http://htmlpreview.github.io/?https://github.com/mmiguel6288code/flatnest/blob/master/docs/flatnest/index.html)
 
-##flatnest
-Converts between nested list structures and flat lists
+Provides generators to traverse nested list structures either depth-first or breadth-first.
 
-Can traverse nested list structures via depth-first search of breadth-first search to produce flat lists
+Can extract structural information from a nested list structure into a string structure pattern which can then be used in conjunction with the flattened list to reconstruct the original nested list structure.
 
-Generates a structure pattern that can be used to reconstruct the original nested structure
-
-Converts between nested index sequences and flat indices
+Provides conversion between a flat index and its corresponding sequence of nested indices (and vice versa).

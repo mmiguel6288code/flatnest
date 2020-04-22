@@ -1,7 +1,7 @@
 from io import open
 from setuptools import find_packages, setup
 
-with open('src/listtools/__init__.py', 'r') as f:
+with open('src/flatnest/__init__.py', 'r') as f:
     for line in f:
         if line.startswith('__version__'):
             version = line.strip().split('=')[1].strip(' \'"')
@@ -14,9 +14,9 @@ with open('README.md','r') as f:
 REQUIRES = []
 
 setup(
-    name='listtools',
+    name='flatnest',
     version=version,
-    description='Algorithms for dealing with lists',
+    description='Algorithms for traversing/flattening/constructing nested list structures',
     long_description=readme,
     long_description_content_type='text/markdown',
     author='Matthew Miguel',

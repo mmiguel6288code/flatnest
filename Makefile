@@ -1,4 +1,4 @@
-target=listtools
+target=flatnest
 files = $(find -type f -name '*.py')
 all: .clean .build .upload .install
 
