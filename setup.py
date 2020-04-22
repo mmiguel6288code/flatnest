@@ -1,7 +1,7 @@
 from io import open
 from setuptools import find_packages, setup
 
-with open('src/ptkcmd/__init__.py', 'r') as f:
+with open('src/listtools/__init__.py', 'r') as f:
     for line in f:
         if line.startswith('__version__'):
             version = line.strip().split('=')[1].strip(' \'"')
@@ -11,12 +11,12 @@ with open('src/ptkcmd/__init__.py', 'r') as f:
 with open('README.md','r') as f:
     readme = f.read()
 
-REQUIRES = ['prompt-toolkit']
+REQUIRES = []
 
 setup(
-    name='ptkcmd',
+    name='listtools',
     version=version,
-    description='cmd.py from the standard library adapted to use prompt-toolkit instead of readline',
+    description='Algorithms for dealing with lists'
     long_description=readme,
     long_description_content_type='text/markdown',
     author='Matthew Miguel',
@@ -26,8 +26,7 @@ setup(
     url='https://github.com/mmiguel6288code/ptkcmd',
     license='MIT',
     keywords=[
-        'cmd','cmd.py','command line','cli','prompt-toolkit','ptkcmd','prompt',
-        
+        'lists','list','depth first search','dfs','bfs','breadth first search','flatten','flat','pattern',
     ],
     classifiers=[
         'Intended Audience :: Developers',
