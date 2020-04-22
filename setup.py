@@ -16,7 +16,7 @@ REQUIRES = []
 setup(
     name='listtools',
     version=version,
-    description='Algorithms for dealing with lists'
+    description='Algorithms for dealing with lists',
     long_description=readme,
     long_description_content_type='text/markdown',
     author='Matthew Miguel',
