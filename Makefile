@@ -1,4 +1,4 @@
-target=sourcetools
+target=listtools
 files = $(find -type f -name '*.py')
 all: .clean .build .upload .install
 
