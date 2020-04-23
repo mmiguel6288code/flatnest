@@ -18,32 +18,39 @@ The | symbol indicates the current level of nest structure specification is done
 
 So for example, '1[2[1]3]3[2]' is a DFS pattern.
 At the top level of this structure are the following 4 items:
+
 	* 1
 	* [2[1]3]
 	* 3
 	* [2]
 
-In BFS form, the first level is represented as 1*3*.
+In BFS form, the first level is represented as '1*3*'.
 The first * to be processed is [2[1]3] which consists of the following 3 items:
+
 	* 2
 	* [1]
 	* 3
-In BFS form, this is represented as 2*3
 
-The BFS pattern at this point (not finished yet) is 1*3*|2*3
+In BFS form, this is represented as '2*3'
+
+The BFS pattern at this point (not finished yet) is '1*3*|2*3'
 
 The next unspecified level is the second * in the pattern so far which represents [2]:
+
 This has just the one item:
+
 	* 2
 
-The BFS pattern at this point (not finished yet) is 1*3*|2*3|2
+The BFS pattern at this point (not finished yet) is '1*3*|2*3|2'
 The final unspecified level is the third *, which represents [1].
 
 The final BFS pattern is '1*3*|2*3|2|1'
 
-This pattern defines an identical nested list structure to the DFS version of it, which is 1[2[1]3]3[2].
+This pattern defines an identical nested list structure to the DFS version of it, which is '1[2[1]3]3[2]'.
 What is different between these two cases is that order of the flattened list.
+
 The order of a DFS flattened list would be essentially the order the items would be written in a python list literal representation.
+
 The order of a BFS flattened list places shallowly located items up front and deeply nested items in the back.
 
 As a simple example, consider:
