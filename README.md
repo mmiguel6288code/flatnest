@@ -13,7 +13,7 @@ There are two types of patterns: depth-first search (DFS) patterns and breadth-f
 
 DFS patterns have square brackets in them and look roughly like python list literals. There are no commas and numbers represent the number of elements in the nested structure at that level.
 
-BFS patterns use the * and | symbols. The * symbol is viewed sort of like a wildcard placeholder indicating a number of child nodes present in that spot.
+BFS patterns use the * and | symbols. The * symbol is viewed sort of like a wildcard placeholder indicating that there are a number of child nodes at a lower level present in that spot.
 The | symbol indicates the current level of nest structure specification is done, and should be followed by the next level of specification that corresponds to the earliest * that hasn't yet been specified.
 
 So for example, '1[2[1]3]3[2]' is a DFS pattern.
