@@ -3,6 +3,7 @@
 [View API documentation](http://htmlpreview.github.io/?https://github.com/mmiguel6288code/flatnest/blob/master/docs/flatnest/index.html)
 
 This package provides:
+
 	1. Provides generators to traverse nested list structures either depth-first or breadth-first.
 	2. Extraction of structural information from a nested list structure into a string structure pattern which can then be used in conjunction with the flattened list to reconstruct the original nested list structure.
 	3. Conversion between a flat index and its corresponding sequence of nested indices (and vice versa).
