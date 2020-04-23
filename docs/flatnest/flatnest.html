@@ -142,7 +142,7 @@ def parse_pattern(structure_pattern):
     &#34;&#34;&#34;
     Splits the structure pattern into integers and nest directive enum values
     &#34;&#34;&#34;
-    return [(token_directive_map[token] if token in token_directive_map else int(token)) for token in re.split(&#39;([&#39;+re.escape(&#39;&#39;.join(directive_token_map.values()))+&#39;])&#39;,structure_pattern)]
+    return [(token_directive_map[token] if token in token_directive_map else int(token)) for token in re.split(&#39;([&#39;+re.escape(&#39;&#39;.join(directive_token_map.values()))+&#39;])&#39;,structure_pattern) if token != &#39;&#39;]
 
 def deflatten(structure_pattern,flat_list):
     &#34;&#34;&#34;
@@ -198,38 +198,38 @@ def deflatten(structure_pattern,flat_list):
     if flat_position &lt; len(flat_list):
         raise Exception(&#39;flat_list has more data than structure_pattern implies&#39;)
     if len(stackqueue) != 0:
-        raise Exception(&#39;Structure pattern contains either imbalanced directive tokens&#39;)
+        raise Exception(&#39;Structure pattern contains imbalanced directive tokens&#39;)
     return top_nested_structure
 
-def get_nest_indices(structure_pattern,flat_index):
+def get_nested_indices(structure_pattern,flat_index):
     &#34;&#34;&#34;
     Given a structure pattern and an index into the flat list, return the corresponding sequence of indices identifying the position in the nested structure.
 
     A negative flat index works from the end of the flat list
 
-    &gt;&gt;&gt; get_nest_indices(&#39;1[2[2[2]2]2]1&#39;,0)
+    &gt;&gt;&gt; get_nested_indices(&#39;1[2[2[2]2]2]1&#39;,0)
     [0]
-    &gt;&gt;&gt; get_nest_indices(&#39;1[2[2[2]2]2]1&#39;,1)
+    &gt;&gt;&gt; get_nested_indices(&#39;1[2[2[2]2]2]1&#39;,1)
     [1, 0]
-    &gt;&gt;&gt; get_nest_indices(&#39;1[2[2[2]2]2]1&#39;,2)
+    &gt;&gt;&gt; get_nested_indices(&#39;1[2[2[2]2]2]1&#39;,2)
     [1, 1]
-    &gt;&gt;&gt; get_nest_indices(&#39;1[2[2[2]2]2]1&#39;,3)
+    &gt;&gt;&gt; get_nested_indices(&#39;1[2[2[2]2]2]1&#39;,3)
     [1, 2, 0]
-    &gt;&gt;&gt; get_nest_indices(&#39;1[2[2[2]2]2]1&#39;,4)
+    &gt;&gt;&gt; get_nested_indices(&#39;1[2[2[2]2]2]1&#39;,4)
     [1, 2, 1]
-    &gt;&gt;&gt; get_nest_indices(&#39;1[2[2[2]2]2]1&#39;,5)
+    &gt;&gt;&gt; get_nested_indices(&#39;1[2[2[2]2]2]1&#39;,5)
     [1, 2, 2, 0]
-    &gt;&gt;&gt; get_nest_indices(&#39;1[2[2[2]2]2]1&#39;,6)
+    &gt;&gt;&gt; get_nested_indices(&#39;1[2[2[2]2]2]1&#39;,6)
     [1, 2, 2, 1]
-    &gt;&gt;&gt; get_nest_indices(&#39;1[2[2[2]2]2]1&#39;,10)
+    &gt;&gt;&gt; get_nested_indices(&#39;1[2[2[2]2]2]1&#39;,10)
     [1, 4]
-    &gt;&gt;&gt; get_nest_indices(&#39;1[2[2[2]2]2]1&#39;,11)
+    &gt;&gt;&gt; get_nested_indices(&#39;1[2[2[2]2]2]1&#39;,11)
     [2]
 
     &#34;&#34;&#34;
     nest_indices = [0]
     current_flat_index = 0
-    nest_queue = []
+    nest_queue = deque()
     structure_directives = parse_pattern(structure_pattern)
     alg = None
     if flat_index &lt; 0:
@@ -298,7 +298,7 @@ def get_flat_index(structure_pattern,nest_indices):
     &#34;&#34;&#34;
     current_nest_indices = [0]
     flat_index = 0
-    nest_queue = []
+    nest_queue = deque()
     structure_directives = parse_pattern(structure_pattern)
     alg = None
     for directive in structure_directives:
@@ -332,7 +332,135 @@ def get_flat_index(structure_pattern,nest_indices):
             else:
                 current_nest_indices[-1] += directive
                 flat_index += directive
-    raise Exception(&#39;The provided nest indices do not exist in the structure pattern&#39;)</code></pre>
+    raise Exception(&#39;The provided nest indices do not exist in the structure pattern&#39;)
+
+def convert_dfs_to_bfs(dfs_pattern):
+    &#34;&#34;&#34;
+    This function takes a pattern corresponding to a depth-first search and produces the corresponding breadth-first search pattern
+
+    &gt;&gt;&gt; convert_dfs_to_bfs(&#39;1[2[1]3]3[2]&#39;)
+    &#39;1*3*|2*3|2|1&#39;
+
+    &#34;&#34;&#34;
+    start = []
+    under_construction = deque([start])
+    level = 0
+    final_positions = [deque([start])]
+    for token in re.split(&#39;([&#39;+re.escape(&#39;&#39;.join(directive_token_map.values()))+&#39;])&#39;,dfs_pattern):
+        if token == &#39;&#39;:
+            continue
+        if token in token_directive_map:
+            directive = token_directive_map[token]
+            if directive is NestDirective.DFS_PUSH:
+                under_construction[-1].append(directive_token_map[NestDirective.BFS_QUEUE])
+                new_item = []
+                under_construction.append(new_item)
+                while level &gt;= len(final_positions):
+                    final_positions.append(deque())
+                final_positions[level].append(new_item)
+                level += 1
+            elif directive is NestDirective.DFS_POP:
+                under_construction.pop()
+                level -= 1
+            else:
+                raise Exception(&#39;Provided pattern has bfs tokens in it&#39;)
+        else:
+            under_construction[-1].append(token)
+    if len(under_construction) != 1:
+        raise Exception(&#39;Structure pattern contains imbalanced directive tokens&#39;)
+
+    serve = directive_token_map[NestDirective.BFS_SERVE]
+    return serve.join([serve.join([&#39;&#39;.join(region) for region in level_group]) for level_group in final_positions])
+
+def convert_bfs_to_dfs(bfs_pattern):
+    &#34;&#34;&#34;
+    This function takes a pattern corresponding to a breadth-first search and produces the corresponding depth-first search pattern
+
+    &gt;&gt;&gt; convert_bfs_to_dfs(&#39;1*3*|2*3|2|1&#39;)
+    &#39;1[2[1]3]3[2]&#39;
+
+    &#34;&#34;&#34;
+    top = []
+    target = top
+    queue = deque()
+    almost_done = deque()
+    for token in re.split(&#39;([&#39;+re.escape(&#39;&#39;.join(directive_token_map.values()))+&#39;])&#39;,bfs_pattern):
+        if token == &#39;&#39;:
+            continue
+        if token in token_directive_map:
+            directive = token_directive_map[token]
+            if directive is NestDirective.BFS_QUEUE:
+                target.append(directive_token_map[NestDirective.DFS_PUSH])
+                inner = []
+                target.append(inner)
+                queue.append(inner)
+                target.append(directive_token_map[NestDirective.DFS_POP])
+            elif directive is NestDirective.BFS_SERVE:
+                almost_done.append(target)
+                target = queue.popleft()
+            else:
+                raise Exception(&#39;Provided pattern has dfs tokens in it&#39;)
+        else:
+            target.append(token)
+    if len(queue) &gt; 0:
+        raise Exception(&#39;Structure pattern contains imbalanced directive tokens&#39;)
+    while len(almost_done) &gt; 0:
+        region = almost_done.pop()
+        copy = list(region)
+        del region[:]
+        for item in copy:
+            if isinstance(item,list):
+                region.extend(item)
+            else:
+                region.append(item)
+
+    return &#39;&#39;.join(top)
+def is_bfs_pattern(pattern):
+    &#34;&#34;&#34;
+    Checks if a given pattern can be interpreted as a breadth-first search pattern
+    &#34;&#34;&#34;
+    return not directive_token_map[NestDirective.DFS_PUSH] in pattern and not directive_token_map[NestDirective.DFS_POP] in pattern
+def is_dfs_pattern(pattern):
+    &#34;&#34;&#34;
+    Checks if a given pattern can be interpreted as a depth-first search pattern
+    &#34;&#34;&#34;
+    return not directive_token_map[NestDirective.BFS_QUEUE] in pattern and not directive_token_map[NestDirective.BFS_SERVE] in pattern
+def as_bfs_pattern(pattern):
+    &#34;&#34;&#34;
+    Converts a pattern to a breadth-first search pattern
+    &#34;&#34;&#34;
+    if is_bfs_pattern(pattern):
+        return pattern
+    return convert_dfs_to_bfs(pattern)
+def as_dfs_pattern(pattern):
+    &#34;&#34;&#34;
+    Converts a pattern to a depth-first search pattern
+    &#34;&#34;&#34;
+    if is_dfs_pattern(pattern):
+        return pattern
+    return convert_bfs_to_dfs(pattern)
+
+def convert_flat_index_dfs_to_bfs(pattern,dfs_flat_index):
+    &#34;&#34;&#34;
+    Calculates a bfs flat index from a dfs one
+    &gt;&gt;&gt; convert_flat_index_dfs_to_bfs(&#39;1[2[1]3]3[2]&#39;,3)
+    11
+
+    &#34;&#34;&#34;
+    dfs_pattern = as_dfs_pattern(pattern)
+    nest_indices = get_nested_indices(dfs_pattern,dfs_flat_index)
+    bfs_pattern = convert_dfs_to_bfs(dfs_pattern)
+    return get_flat_index(bfs_pattern,nest_indices)
+def convert_flat_index_bfs_to_dfs(pattern,bfs_flat_index):
+    &#34;&#34;&#34;
+    Calculates a dfs flat index from a bfs one
+    &gt;&gt;&gt; convert_flat_index_bfs_to_dfs(&#39;1[2[1]3]3[2]&#39;,11)
+    3
+    &#34;&#34;&#34;
+    bfs_pattern = as_bfs_pattern(pattern)
+    nest_indices = get_nested_indices(bfs_pattern,bfs_flat_index)
+    dfs_pattern = convert_bfs_to_dfs(bfs_pattern)
+    return get_flat_index(dfs_pattern,nest_indices)</code></pre>
 </details>
 </section>
 <section>
@@ -342,6 +470,42 @@ def get_flat_index(structure_pattern,nest_indices):
 <section>
 <h2 class="section-title" id="header-functions">Functions</h2>
 <dl>
+<dt id="flatnest.flatnest.as_bfs_pattern"><code class="name flex">
+<span>def <span class="ident">as_bfs_pattern</span></span>(<span>pattern)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Converts a pattern to a breadth-first search pattern</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def as_bfs_pattern(pattern):
+    &#34;&#34;&#34;
+    Converts a pattern to a breadth-first search pattern
+    &#34;&#34;&#34;
+    if is_bfs_pattern(pattern):
+        return pattern
+    return convert_dfs_to_bfs(pattern)</code></pre>
+</details>
+</dd>
+<dt id="flatnest.flatnest.as_dfs_pattern"><code class="name flex">
+<span>def <span class="ident">as_dfs_pattern</span></span>(<span>pattern)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Converts a pattern to a depth-first search pattern</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def as_dfs_pattern(pattern):
+    &#34;&#34;&#34;
+    Converts a pattern to a depth-first search pattern
+    &#34;&#34;&#34;
+    if is_dfs_pattern(pattern):
+        return pattern
+    return convert_bfs_to_dfs(pattern)</code></pre>
+</details>
+</dd>
 <dt id="flatnest.flatnest.bfs"><code class="name flex">
 <span>def <span class="ident">bfs</span></span>(<span>nested_structure, include_nest_directives=False)</span>
 </code></dt>
@@ -373,6 +537,163 @@ def get_flat_index(structure_pattern,nest_indices):
                 yield item
         if len(queue) &gt; 0 and include_nest_directives:
             yield NestDirective.BFS_SERVE</code></pre>
+</details>
+</dd>
+<dt id="flatnest.flatnest.convert_bfs_to_dfs"><code class="name flex">
+<span>def <span class="ident">convert_bfs_to_dfs</span></span>(<span>bfs_pattern)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>This function takes a pattern corresponding to a breadth-first search and produces the corresponding depth-first search pattern</p>
+<pre><code class="python">&gt;&gt;&gt; convert_bfs_to_dfs('1*3*|2*3|2|1')
+'1[2[1]3]3[2]'
+</code></pre></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def convert_bfs_to_dfs(bfs_pattern):
+    &#34;&#34;&#34;
+    This function takes a pattern corresponding to a breadth-first search and produces the corresponding depth-first search pattern
+
+    &gt;&gt;&gt; convert_bfs_to_dfs(&#39;1*3*|2*3|2|1&#39;)
+    &#39;1[2[1]3]3[2]&#39;
+
+    &#34;&#34;&#34;
+    top = []
+    target = top
+    queue = deque()
+    almost_done = deque()
+    for token in re.split(&#39;([&#39;+re.escape(&#39;&#39;.join(directive_token_map.values()))+&#39;])&#39;,bfs_pattern):
+        if token == &#39;&#39;:
+            continue
+        if token in token_directive_map:
+            directive = token_directive_map[token]
+            if directive is NestDirective.BFS_QUEUE:
+                target.append(directive_token_map[NestDirective.DFS_PUSH])
+                inner = []
+                target.append(inner)
+                queue.append(inner)
+                target.append(directive_token_map[NestDirective.DFS_POP])
+            elif directive is NestDirective.BFS_SERVE:
+                almost_done.append(target)
+                target = queue.popleft()
+            else:
+                raise Exception(&#39;Provided pattern has dfs tokens in it&#39;)
+        else:
+            target.append(token)
+    if len(queue) &gt; 0:
+        raise Exception(&#39;Structure pattern contains imbalanced directive tokens&#39;)
+    while len(almost_done) &gt; 0:
+        region = almost_done.pop()
+        copy = list(region)
+        del region[:]
+        for item in copy:
+            if isinstance(item,list):
+                region.extend(item)
+            else:
+                region.append(item)
+
+    return &#39;&#39;.join(top)</code></pre>
+</details>
+</dd>
+<dt id="flatnest.flatnest.convert_dfs_to_bfs"><code class="name flex">
+<span>def <span class="ident">convert_dfs_to_bfs</span></span>(<span>dfs_pattern)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>This function takes a pattern corresponding to a depth-first search and produces the corresponding breadth-first search pattern</p>
+<pre><code class="python">&gt;&gt;&gt; convert_dfs_to_bfs('1[2[1]3]3[2]')
+'1*3*|2*3|2|1'
+</code></pre></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def convert_dfs_to_bfs(dfs_pattern):
+    &#34;&#34;&#34;
+    This function takes a pattern corresponding to a depth-first search and produces the corresponding breadth-first search pattern
+
+    &gt;&gt;&gt; convert_dfs_to_bfs(&#39;1[2[1]3]3[2]&#39;)
+    &#39;1*3*|2*3|2|1&#39;
+
+    &#34;&#34;&#34;
+    start = []
+    under_construction = deque([start])
+    level = 0
+    final_positions = [deque([start])]
+    for token in re.split(&#39;([&#39;+re.escape(&#39;&#39;.join(directive_token_map.values()))+&#39;])&#39;,dfs_pattern):
+        if token == &#39;&#39;:
+            continue
+        if token in token_directive_map:
+            directive = token_directive_map[token]
+            if directive is NestDirective.DFS_PUSH:
+                under_construction[-1].append(directive_token_map[NestDirective.BFS_QUEUE])
+                new_item = []
+                under_construction.append(new_item)
+                while level &gt;= len(final_positions):
+                    final_positions.append(deque())
+                final_positions[level].append(new_item)
+                level += 1
+            elif directive is NestDirective.DFS_POP:
+                under_construction.pop()
+                level -= 1
+            else:
+                raise Exception(&#39;Provided pattern has bfs tokens in it&#39;)
+        else:
+            under_construction[-1].append(token)
+    if len(under_construction) != 1:
+        raise Exception(&#39;Structure pattern contains imbalanced directive tokens&#39;)
+
+    serve = directive_token_map[NestDirective.BFS_SERVE]
+    return serve.join([serve.join([&#39;&#39;.join(region) for region in level_group]) for level_group in final_positions])</code></pre>
+</details>
+</dd>
+<dt id="flatnest.flatnest.convert_flat_index_bfs_to_dfs"><code class="name flex">
+<span>def <span class="ident">convert_flat_index_bfs_to_dfs</span></span>(<span>pattern, bfs_flat_index)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Calculates a dfs flat index from a bfs one</p>
+<pre><code class="python">&gt;&gt;&gt; convert_flat_index_bfs_to_dfs('1[2[1]3]3[2]',11)
+3
+</code></pre></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def convert_flat_index_bfs_to_dfs(pattern,bfs_flat_index):
+    &#34;&#34;&#34;
+    Calculates a dfs flat index from a bfs one
+    &gt;&gt;&gt; convert_flat_index_bfs_to_dfs(&#39;1[2[1]3]3[2]&#39;,11)
+    3
+    &#34;&#34;&#34;
+    bfs_pattern = as_bfs_pattern(pattern)
+    nest_indices = get_nested_indices(bfs_pattern,bfs_flat_index)
+    dfs_pattern = convert_bfs_to_dfs(bfs_pattern)
+    return get_flat_index(dfs_pattern,nest_indices)</code></pre>
+</details>
+</dd>
+<dt id="flatnest.flatnest.convert_flat_index_dfs_to_bfs"><code class="name flex">
+<span>def <span class="ident">convert_flat_index_dfs_to_bfs</span></span>(<span>pattern, dfs_flat_index)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Calculates a bfs flat index from a dfs one</p>
+<pre><code class="python">&gt;&gt;&gt; convert_flat_index_dfs_to_bfs('1[2[1]3]3[2]',3)
+11
+</code></pre></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def convert_flat_index_dfs_to_bfs(pattern,dfs_flat_index):
+    &#34;&#34;&#34;
+    Calculates a bfs flat index from a dfs one
+    &gt;&gt;&gt; convert_flat_index_dfs_to_bfs(&#39;1[2[1]3]3[2]&#39;,3)
+    11
+
+    &#34;&#34;&#34;
+    dfs_pattern = as_dfs_pattern(pattern)
+    nest_indices = get_nested_indices(dfs_pattern,dfs_flat_index)
+    bfs_pattern = convert_dfs_to_bfs(dfs_pattern)
+    return get_flat_index(bfs_pattern,nest_indices)</code></pre>
 </details>
 </dd>
 <dt id="flatnest.flatnest.deflatten"><code class="name flex">
@@ -444,7 +765,7 @@ def get_flat_index(structure_pattern,nest_indices):
     if flat_position &lt; len(flat_list):
         raise Exception(&#39;flat_list has more data than structure_pattern implies&#39;)
     if len(stackqueue) != 0:
-        raise Exception(&#39;Structure pattern contains either imbalanced directive tokens&#39;)
+        raise Exception(&#39;Structure pattern contains imbalanced directive tokens&#39;)
     return top_nested_structure</code></pre>
 </details>
 </dd>
@@ -595,7 +916,7 @@ The flat list corresponds to the order of traversal in the provided algorithm pa
     &#34;&#34;&#34;
     current_nest_indices = [0]
     flat_index = 0
-    nest_queue = []
+    nest_queue = deque()
     structure_directives = parse_pattern(structure_pattern)
     alg = None
     for directive in structure_directives:
@@ -632,64 +953,64 @@ The flat list corresponds to the order of traversal in the provided algorithm pa
     raise Exception(&#39;The provided nest indices do not exist in the structure pattern&#39;)</code></pre>
 </details>
 </dd>
-<dt id="flatnest.flatnest.get_nest_indices"><code class="name flex">
-<span>def <span class="ident">get_nest_indices</span></span>(<span>structure_pattern, flat_index)</span>
+<dt id="flatnest.flatnest.get_nested_indices"><code class="name flex">
+<span>def <span class="ident">get_nested_indices</span></span>(<span>structure_pattern, flat_index)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Given a structure pattern and an index into the flat list, return the corresponding sequence of indices identifying the position in the nested structure.</p>
 <p>A negative flat index works from the end of the flat list</p>
-<pre><code class="python">&gt;&gt;&gt; get_nest_indices('1[2[2[2]2]2]1',0)
+<pre><code class="python">&gt;&gt;&gt; get_nested_indices('1[2[2[2]2]2]1',0)
 [0]
-&gt;&gt;&gt; get_nest_indices('1[2[2[2]2]2]1',1)
+&gt;&gt;&gt; get_nested_indices('1[2[2[2]2]2]1',1)
 [1, 0]
-&gt;&gt;&gt; get_nest_indices('1[2[2[2]2]2]1',2)
+&gt;&gt;&gt; get_nested_indices('1[2[2[2]2]2]1',2)
 [1, 1]
-&gt;&gt;&gt; get_nest_indices('1[2[2[2]2]2]1',3)
+&gt;&gt;&gt; get_nested_indices('1[2[2[2]2]2]1',3)
 [1, 2, 0]
-&gt;&gt;&gt; get_nest_indices('1[2[2[2]2]2]1',4)
+&gt;&gt;&gt; get_nested_indices('1[2[2[2]2]2]1',4)
 [1, 2, 1]
-&gt;&gt;&gt; get_nest_indices('1[2[2[2]2]2]1',5)
+&gt;&gt;&gt; get_nested_indices('1[2[2[2]2]2]1',5)
 [1, 2, 2, 0]
-&gt;&gt;&gt; get_nest_indices('1[2[2[2]2]2]1',6)
+&gt;&gt;&gt; get_nested_indices('1[2[2[2]2]2]1',6)
 [1, 2, 2, 1]
-&gt;&gt;&gt; get_nest_indices('1[2[2[2]2]2]1',10)
+&gt;&gt;&gt; get_nested_indices('1[2[2[2]2]2]1',10)
 [1, 4]
-&gt;&gt;&gt; get_nest_indices('1[2[2[2]2]2]1',11)
+&gt;&gt;&gt; get_nested_indices('1[2[2[2]2]2]1',11)
 [2]
 </code></pre></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def get_nest_indices(structure_pattern,flat_index):
+<pre><code class="python">def get_nested_indices(structure_pattern,flat_index):
     &#34;&#34;&#34;
     Given a structure pattern and an index into the flat list, return the corresponding sequence of indices identifying the position in the nested structure.
 
     A negative flat index works from the end of the flat list
 
-    &gt;&gt;&gt; get_nest_indices(&#39;1[2[2[2]2]2]1&#39;,0)
+    &gt;&gt;&gt; get_nested_indices(&#39;1[2[2[2]2]2]1&#39;,0)
     [0]
-    &gt;&gt;&gt; get_nest_indices(&#39;1[2[2[2]2]2]1&#39;,1)
+    &gt;&gt;&gt; get_nested_indices(&#39;1[2[2[2]2]2]1&#39;,1)
     [1, 0]
-    &gt;&gt;&gt; get_nest_indices(&#39;1[2[2[2]2]2]1&#39;,2)
+    &gt;&gt;&gt; get_nested_indices(&#39;1[2[2[2]2]2]1&#39;,2)
     [1, 1]
-    &gt;&gt;&gt; get_nest_indices(&#39;1[2[2[2]2]2]1&#39;,3)
+    &gt;&gt;&gt; get_nested_indices(&#39;1[2[2[2]2]2]1&#39;,3)
     [1, 2, 0]
-    &gt;&gt;&gt; get_nest_indices(&#39;1[2[2[2]2]2]1&#39;,4)
+    &gt;&gt;&gt; get_nested_indices(&#39;1[2[2[2]2]2]1&#39;,4)
     [1, 2, 1]
-    &gt;&gt;&gt; get_nest_indices(&#39;1[2[2[2]2]2]1&#39;,5)
+    &gt;&gt;&gt; get_nested_indices(&#39;1[2[2[2]2]2]1&#39;,5)
     [1, 2, 2, 0]
-    &gt;&gt;&gt; get_nest_indices(&#39;1[2[2[2]2]2]1&#39;,6)
+    &gt;&gt;&gt; get_nested_indices(&#39;1[2[2[2]2]2]1&#39;,6)
     [1, 2, 2, 1]
-    &gt;&gt;&gt; get_nest_indices(&#39;1[2[2[2]2]2]1&#39;,10)
+    &gt;&gt;&gt; get_nested_indices(&#39;1[2[2[2]2]2]1&#39;,10)
     [1, 4]
-    &gt;&gt;&gt; get_nest_indices(&#39;1[2[2[2]2]2]1&#39;,11)
+    &gt;&gt;&gt; get_nested_indices(&#39;1[2[2[2]2]2]1&#39;,11)
     [2]
 
     &#34;&#34;&#34;
     nest_indices = [0]
     current_flat_index = 0
-    nest_queue = []
+    nest_queue = deque()
     structure_directives = parse_pattern(structure_pattern)
     alg = None
     if flat_index &lt; 0:
@@ -730,6 +1051,38 @@ The flat list corresponds to the order of traversal in the provided algorithm pa
     raise Exception(&#39;flat index exceeds size implied by structure pattern&#39;)</code></pre>
 </details>
 </dd>
+<dt id="flatnest.flatnest.is_bfs_pattern"><code class="name flex">
+<span>def <span class="ident">is_bfs_pattern</span></span>(<span>pattern)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Checks if a given pattern can be interpreted as a breadth-first search pattern</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def is_bfs_pattern(pattern):
+    &#34;&#34;&#34;
+    Checks if a given pattern can be interpreted as a breadth-first search pattern
+    &#34;&#34;&#34;
+    return not directive_token_map[NestDirective.DFS_PUSH] in pattern and not directive_token_map[NestDirective.DFS_POP] in pattern</code></pre>
+</details>
+</dd>
+<dt id="flatnest.flatnest.is_dfs_pattern"><code class="name flex">
+<span>def <span class="ident">is_dfs_pattern</span></span>(<span>pattern)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Checks if a given pattern can be interpreted as a depth-first search pattern</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def is_dfs_pattern(pattern):
+    &#34;&#34;&#34;
+    Checks if a given pattern can be interpreted as a depth-first search pattern
+    &#34;&#34;&#34;
+    return not directive_token_map[NestDirective.BFS_QUEUE] in pattern and not directive_token_map[NestDirective.BFS_SERVE] in pattern</code></pre>
+</details>
+</dd>
 <dt id="flatnest.flatnest.parse_pattern"><code class="name flex">
 <span>def <span class="ident">parse_pattern</span></span>(<span>structure_pattern)</span>
 </code></dt>
@@ -743,7 +1096,7 @@ The flat list corresponds to the order of traversal in the provided algorithm pa
     &#34;&#34;&#34;
     Splits the structure pattern into integers and nest directive enum values
     &#34;&#34;&#34;
-    return [(token_directive_map[token] if token in token_directive_map else int(token)) for token in re.split(&#39;([&#39;+re.escape(&#39;&#39;.join(directive_token_map.values()))+&#39;])&#39;,structure_pattern)]</code></pre>
+    return [(token_directive_map[token] if token in token_directive_map else int(token)) for token in re.split(&#39;([&#39;+re.escape(&#39;&#39;.join(directive_token_map.values()))+&#39;])&#39;,structure_pattern) if token != &#39;&#39;]</code></pre>
 </details>
 </dd>
 </dl>
@@ -806,13 +1159,21 @@ The flat list corresponds to the order of traversal in the provided algorithm pa
 </ul>
 </li>
 <li><h3><a href="#header-functions">Functions</a></h3>
-<ul class="two-column">
+<ul class="">
+<li><code><a title="flatnest.flatnest.as_bfs_pattern" href="#flatnest.flatnest.as_bfs_pattern">as_bfs_pattern</a></code></li>
+<li><code><a title="flatnest.flatnest.as_dfs_pattern" href="#flatnest.flatnest.as_dfs_pattern">as_dfs_pattern</a></code></li>
 <li><code><a title="flatnest.flatnest.bfs" href="#flatnest.flatnest.bfs">bfs</a></code></li>
+<li><code><a title="flatnest.flatnest.convert_bfs_to_dfs" href="#flatnest.flatnest.convert_bfs_to_dfs">convert_bfs_to_dfs</a></code></li>
+<li><code><a title="flatnest.flatnest.convert_dfs_to_bfs" href="#flatnest.flatnest.convert_dfs_to_bfs">convert_dfs_to_bfs</a></code></li>
+<li><code><a title="flatnest.flatnest.convert_flat_index_bfs_to_dfs" href="#flatnest.flatnest.convert_flat_index_bfs_to_dfs">convert_flat_index_bfs_to_dfs</a></code></li>
+<li><code><a title="flatnest.flatnest.convert_flat_index_dfs_to_bfs" href="#flatnest.flatnest.convert_flat_index_dfs_to_bfs">convert_flat_index_dfs_to_bfs</a></code></li>
 <li><code><a title="flatnest.flatnest.deflatten" href="#flatnest.flatnest.deflatten">deflatten</a></code></li>
 <li><code><a title="flatnest.flatnest.dfs" href="#flatnest.flatnest.dfs">dfs</a></code></li>
 <li><code><a title="flatnest.flatnest.flatten" href="#flatnest.flatnest.flatten">flatten</a></code></li>
 <li><code><a title="flatnest.flatnest.get_flat_index" href="#flatnest.flatnest.get_flat_index">get_flat_index</a></code></li>
-<li><code><a title="flatnest.flatnest.get_nest_indices" href="#flatnest.flatnest.get_nest_indices">get_nest_indices</a></code></li>
+<li><code><a title="flatnest.flatnest.get_nested_indices" href="#flatnest.flatnest.get_nested_indices">get_nested_indices</a></code></li>
+<li><code><a title="flatnest.flatnest.is_bfs_pattern" href="#flatnest.flatnest.is_bfs_pattern">is_bfs_pattern</a></code></li>
+<li><code><a title="flatnest.flatnest.is_dfs_pattern" href="#flatnest.flatnest.is_dfs_pattern">is_dfs_pattern</a></code></li>
 <li><code><a title="flatnest.flatnest.parse_pattern" href="#flatnest.flatnest.parse_pattern">parse_pattern</a></code></li>
 </ul>
 </li>
