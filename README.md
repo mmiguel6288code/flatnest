@@ -13,8 +13,8 @@ There are two types of patterns: depth-first search (DFS) patterns and breadth-f
 
 DFS patterns have square brackets in them and look roughly like python list literals. There are no commas and numbers represent the number of elements in the nested structure at that level.
 
-BFS patterns use the * and | symbols. The * symbol is viewed sort of like a wildcard placeholder indicating that there are a number of child nodes at a lower level present in that spot.
-The | symbol indicates the current level of nest structure specification is done, and should be followed by the next level of specification that corresponds to the earliest * that hasn't yet been specified.
+BFS patterns use the &ast; and | symbols. The &ast; symbol is viewed sort of like a wildcard placeholder indicating that there are a number of child nodes at a lower level present in that spot.
+The | symbol indicates the current level of nest structure specification is done, and should be followed by the next level of specification that corresponds to the earliest &ast; that hasn't yet been specified.
 
 So for example, '1[2[1]3]3[2]' is a DFS pattern.
 At the top level of this structure are the following 4 items:
@@ -24,27 +24,27 @@ At the top level of this structure are the following 4 items:
 	- 3
 	- [2]
 
-In BFS form, the first level is represented as '1*3*'.
-The first * to be processed is [2[1]3] which consists of the following 3 items:
+In BFS form, the first level is represented as '1&ast;3&ast;'.
+The first &ast; to be processed is [2[1]3] which consists of the following 3 items:
 
 	- 2
 	- [1]
 	- 3
 
-In BFS form, this is represented as '2*3'
+In BFS form, this is represented as '2&ast;3'
 
-The BFS pattern at this point (not finished yet) is '1*3*|2*3'
+The BFS pattern at this point (not finished yet) is '1&ast;3&ast;|2&ast;3'
 
-The next unspecified level is the second * in the pattern so far which represents [2]:
+The next unspecified level is the second &ast; in the pattern so far which represents [2]:
 
 This has just the one item:
 
 	- 2
 
-The BFS pattern at this point (not finished yet) is '1*3*|2*3|2'
-The final unspecified level is the third *, which represents [1].
+The BFS pattern at this point (not finished yet) is '1&ast;3&ast;|2&ast;3|2'
+The final unspecified level is the third &ast;, which represents [1].
 
-The final BFS pattern is '1*3*|2*3|2|1'
+The final BFS pattern is '1&ast;3&ast;|2&ast;3|2|1'
 
 This pattern defines an identical nested list structure to the DFS version of it, which is '1[2[1]3]3[2]'.
 What is different between these two cases is that order of the flattened list.
