@@ -4,9 +4,9 @@
 
 This package provides:
 
-	1. Provides generators to traverse nested list structures either depth-first or breadth-first.
-	2. Extraction of structural information from a nested list structure into a string structure pattern which can then be used in conjunction with the flattened list to reconstruct the original nested list structure.
-	3. Conversion between a flat index and its corresponding sequence of nested indices (and vice versa).
+1. Provides generators to traverse nested list structures either depth-first or breadth-first.
+2. Extraction of structural information from a nested list structure into a string structure pattern which can then be used in conjunction with the flattened list to reconstruct the original nested list structure.
+3. Conversion between a flat index and its corresponding sequence of nested indices (and vice versa).
 
 There are two types of patterns: depth-first search (DFS) patterns and breadth-first search (BFS) patterns.
 DFS patterns have square brackets in them and look roughly like python list literals. There are no commas and numbers represent the number of elements in the nested structure at that level.
