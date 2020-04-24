@@ -31,10 +31,20 @@ def dfs(nested_structure,include_nest_directives=False):
 
     >>> list(dfs([1,[2,3,[4,5,[6,7],8,9],10,11],12]))
     [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
+
+    >>> list(dfs([1,[2],[3]]))
+    [1, 2, 3]
+
+    >>> list(dfs([1,[2],[3],4]))
+    [1, 2, 3, 4]
+
+    >>> list(dfs([]))
+    []
     """
     stack = deque([[nested_structure,0]])
     while len(stack) > 0:
         tree,pos = stack[-1]
+        pushed=False
         while pos < len(tree):
             item = tree[pos]
             pos += 1
@@ -43,10 +53,11 @@ def dfs(nested_structure,include_nest_directives=False):
                     yield NestDirective.DFS_PUSH
                 stack[-1][1] = pos
                 stack.append([item,0])
+                pushed = True
                 break
             else:
                 yield item
-        if pos == len(tree):
+        if not pushed and pos == len(tree):
             if len(stack) > 1 and include_nest_directives:
                 yield NestDirective.DFS_POP
             stack.pop()
@@ -56,6 +67,15 @@ def bfs(nested_structure,include_nest_directives=False):
     
     >>> list(bfs([1,[2,3,[4,5,[6,7],8,9],10,11],12]))
     [1, 12, 2, 3, 10, 11, 4, 5, 8, 9, 6, 7]
+
+    >>> list(bfs([1,[2],[3]]))
+    [1, 2, 3]
+
+    >>> list(bfs([1,[2],[3],4]))
+    [1, 4, 2, 3]
+
+    >>> list(bfs([]))
+    []
     """
     queue = deque([nested_structure])
     while len(queue) > 0:
