@@ -23,7 +23,7 @@ setup(
     author_email='mmiguel6288code@gmail.com',
     maintainer='Matthew Miguel',
     maintainer_email='mmiguel6288code@gmail.com',
-    url='https://github.com/mmiguel6288code/ptkcmd',
+    url='https://github.com/mmiguel6288code/flatnest',
     license='MIT',
     keywords=[
         'lists','list','depth first search','dfs','bfs','breadth first search','flatten','flat','pattern',
