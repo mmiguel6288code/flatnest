@@ -25,9 +25,19 @@ directive_token_map = {
 #invert the directive_token_map dict
 token_directive_map = {token:directive for directive,token in directive_token_map.items()}
 
-def dfs(nested_structure,include_nest_directives=False):
+def dfs(nested_structure,include_nest_directives=False,yield_condition=None,get_children_func=None):
     """
     Implements a depth-first-search traversal of a nested list structure
+
+    include_nest_directives will yield instances of NestDirective.DFS_PUSH and NestDirective.DFS_POP when going to and from a deeper level
+
+    yield_condition is a function that accepts an item and returns True if the item should be yielded otherwise False
+    The default yield_condition returns True iff the item is not a list or tuple.
+
+    get_children_func is a function that accepts an item and returns a list of children items to iterate through or None if no iteration through children should be performed
+    The default get_children_func returns the item itself if it is a list or a tuple, otherwise None
+
+    If an item is to be yielded and has children, then it is yielded before its children are processed.
 
     >>> list(dfs([1,[2,3,[4,5,[6,7],8,9],10,11],12]))
     [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
@@ -41,6 +51,10 @@ def dfs(nested_structure,include_nest_directives=False):
     >>> list(dfs([]))
     []
     """
+    if yield_condition is None:
+        yield_condition = lambda item: not isinstance(item,(list,tuple))
+    if get_children_func is None:
+        get_children_func = lambda item: (item if isinstance(item,(list,tuple)) else None)
     stack = deque([[nested_structure,0]])
     while len(stack) > 0:
         tree,pos = stack[-1]
@@ -48,22 +62,27 @@ def dfs(nested_structure,include_nest_directives=False):
         while pos < len(tree):
             item = tree[pos]
             pos += 1
-            if isinstance(item,(list,tuple)):
+            if yield_condition(item):
+                yield item
+            children = get_children_func(item)
+            if children is not None:
                 if include_nest_directives:
                     yield NestDirective.DFS_PUSH
                 stack[-1][1] = pos
-                stack.append([item,0])
+                stack.append([children,0])
                 pushed = True
                 break
-            else:
-                yield item
         if not pushed and pos == len(tree):
             if len(stack) > 1 and include_nest_directives:
                 yield NestDirective.DFS_POP
             stack.pop()
-def bfs(nested_structure,include_nest_directives=False):
+def bfs(nested_structure,include_nest_directives=False,yield_condition=None,get_children_func=None):
     """
     Implements a breadth-first-search traversal of a nested list structure
+    
+    include_nest_directives will yield instances of NestDirective.BFS_QUEUE and NestDirective.BFS_SERVE when encountering a subtree and when switching to process a new subtree
+
+    yield_condition and get_children_func have the same meaning as in the dfs function
     
     >>> list(bfs([1,[2,3,[4,5,[6,7],8,9],10,11],12]))
     [1, 12, 2, 3, 10, 11, 4, 5, 8, 9, 6, 7]
@@ -77,16 +96,21 @@ def bfs(nested_structure,include_nest_directives=False):
     >>> list(bfs([]))
     []
     """
+    if yield_condition is None:
+        yield_condition = lambda item: not isinstance(item,(list,tuple))
+    if get_children_func is None:
+        get_children_func = lambda item: (item if isinstance(item,(list,tuple)) else None)
     queue = deque([nested_structure])
     while len(queue) > 0:
         tree = queue.popleft()
         for item in tree:
-            if isinstance(item,(list,tuple)):
+            if yield_condition(item):
+                yield item
+            children = get_children_func(item)
+            if children is not None:
                 if include_nest_directives:
                     yield NestDirective.BFS_QUEUE
                 queue.append(item)
-            else:
-                yield item
         if len(queue) > 0 and include_nest_directives:
             yield NestDirective.BFS_SERVE
 
